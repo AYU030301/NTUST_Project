@@ -48,19 +48,29 @@ for i in Path(Sample_dir).glob("*?*"):
     r = r2pipe.open(str(i))
     r.cmd('e asm.bytes = true')     # Set Create Bytes to True
     r.cmd('e asm.nbytes = 20')      # Set Bytes Length
-    r.cmd('aaaa')
+    r.cmd('aaaa')                   # Disassemble
     sections = r.cmd('iS').splitlines(True)
+    
+    
+    target_folder_path = f"{Asm_r2_dir}\\{filename.split('.exe')[0]}"
+    if not Path(target_folder_path).exists():
+        Path(target_folder_path).mkdir()
     
     for section_line in sections:
         section_line_split_list = section_line.split("\r\n")[0].split(" ")
+        
+        # Remove NULL Item
         while '' in section_line_split_list:
             section_line_split_list.remove('')
+
         if len(section_line_split_list) == 8 and section_line_split_list[7] != "name":
             sec_num, sec_paddr, sec_size, sec_vaddr, sec_vsize, sec_perm, sec_type, sec_name = section_line_split_list
         
             # Radare2 Commands
             r.cmd(sec_vaddr)
-            assembly_code = r.cmd("pd")
+            assembly_code = r.cmd(f"pD {sec_vsize}")
 
-            with open(f'{Asm_r2_dir}\\{filename.split(".exe")[0]}_{sec_name}.asm', mode = "w+", newline = '', encoding = "utf-8") as section_output:
+            # Output Sample Disassemble Sections
+            with open(f'{target_folder_path}\\{filename.split(".exe")[0]}_{sec_num}@{sec_name}.asm', mode = "w", newline = '', encoding = "utf-8") as section_output:
                 section_output.write(assembly_code)
+    r.cmd('exit')
